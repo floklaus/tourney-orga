@@ -5,10 +5,9 @@ import { ageGroupFor, gradeLabel, MAX_GRADUATION_YEAR, MIN_GRADUATION_YEAR } fro
 import { api } from "@/lib/api";
 import { isValidEmail, parseEmailList } from "@/lib/format";
 import { useSettings } from "@/lib/queries";
-import type { Team, TeamGroup, TeamInput } from "@/lib/types";
+import type { Team, TeamInput } from "@/lib/types";
 import { ErrorAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { CheckboxList } from "@/components/ui/checkbox-list";
 import { TextAreaField, TextField } from "@/components/ui/field";
 
 const MAX_CC = 5;
@@ -29,14 +28,13 @@ function validate(input: TeamInput): Record<string, string> {
 
 export interface TeamFormProps {
   team: Team | null;
-  groups: TeamGroup[];
   /** Omit to hide the Cancel button (e.g. on the team page). */
   onClose?: () => void;
   onSaved: (team: Team) => void;
 }
 
-/** Name, contact, email, CC, notes and groups; POST /teams or PATCH /teams/:id. */
-export function TeamForm({ team, groups, onClose, onSaved }: TeamFormProps) {
+/** Name, graduation year, contact, email, CC and notes; POST /teams or PATCH /teams/:id. */
+export function TeamForm({ team, onClose, onSaved }: TeamFormProps) {
   const [name, setName] = useState(team?.name ?? "");
   const [contactName, setContactName] = useState(team?.contactName ?? "");
   const [email, setEmail] = useState(team?.email ?? "");
@@ -44,7 +42,6 @@ export function TeamForm({ team, groups, onClose, onSaved }: TeamFormProps) {
   const [graduationYear, setGraduationYear] = useState(team?.graduationYear?.toString() ?? "");
   const seasonStartMonth = useSettings().data?.seasonStartMonth ?? 9;
   const [notes, setNotes] = useState(team?.notes ?? "");
-  const [groupIds, setGroupIds] = useState<string[]>(team?.groups.map((g) => g.id) ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -58,7 +55,6 @@ export function TeamForm({ team, groups, onClose, onSaved }: TeamFormProps) {
       ccEmails: parseEmailList(cc),
       graduationYear: graduationYear.trim() ? Number(graduationYear) : null,
       notes: notes.trim() || null,
-      groupIds,
     };
     const found = validate(input);
     setErrors(found);
@@ -94,14 +90,6 @@ export function TeamForm({ team, groups, onClose, onSaved }: TeamFormProps) {
         error={errors.ccEmails}
       />
       <TextAreaField label="Notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
-      <CheckboxList
-        legend="Groups"
-        options={groups.map((g) => ({ id: g.id, name: g.name }))}
-        selected={groupIds}
-        onChange={setGroupIds}
-        searchable
-        emptyText="No groups yet. Create groups on the Groups page."
-      />
       <div className="flex justify-end gap-2">
         {onClose && (
           <Button variant="secondary" onClick={onClose} disabled={busy}>

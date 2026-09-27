@@ -94,7 +94,6 @@ export interface Team {
   notes: string | null;
   isArchived: boolean;
   unsubscribedAt: IsoDateTime | null;
-  groups: NamedRef[];
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }
@@ -106,7 +105,6 @@ export interface TeamInput {
   ccEmails?: string[];
   graduationYear?: number | null;
   notes?: string | null;
-  groupIds?: Uuid[];
 }
 
 export type TeamPatch = Partial<TeamInput> & { isArchived?: boolean };
@@ -117,13 +115,6 @@ export interface ImportResult {
   created: number;
   updated: number;
   errors: { row: number; message: string }[];
-}
-
-export interface TeamGroup {
-  id: Uuid;
-  name: string;
-  description: string | null;
-  teamCount: number;
 }
 
 export interface EmailTemplate {

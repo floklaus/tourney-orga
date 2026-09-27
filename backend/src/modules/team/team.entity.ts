@@ -1,6 +1,5 @@
-import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { BaseEntity } from '../../common/base.entity';
-import { TeamGroup } from './team-group.entity';
 
 @Entity('teams')
 export class Team extends BaseEntity {
@@ -31,12 +30,4 @@ export class Team extends BaseEntity {
 
   @Column({ unique: true })
   unsubscribeToken: string;
-
-  @ManyToMany(() => TeamGroup, (group) => group.teams)
-  @JoinTable({
-    name: 'team_group_members',
-    joinColumn: { name: 'team_id' },
-    inverseJoinColumn: { name: 'group_id' },
-  })
-  groups: TeamGroup[];
 }

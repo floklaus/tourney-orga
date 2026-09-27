@@ -4,7 +4,6 @@ import { useState } from "react";
 import { api, downloadUrl } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { useListQuery } from "@/lib/list-query";
-import { useGroups } from "@/lib/queries";
 import { useListData } from "@/lib/use-list-data";
 import type { Team } from "@/lib/types";
 import { DataTable } from "@/components/data-table/data-table";
@@ -29,7 +28,6 @@ const T = {
 
 export function TeamsPage() {
   const toast = useToast();
-  const groups = useGroups();
   const list = useListQuery();
   const teams = useListData<Team>("/teams", list);
 
@@ -95,7 +93,6 @@ export function TeamsPage() {
       <TeamFormDialog
         open={formOpen}
         team={editing}
-        groups={groups.data ?? []}
         onClose={() => setFormOpen(false)}
         onSaved={(saved) => {
           setFormOpen(false);
@@ -110,7 +107,6 @@ export function TeamsPage() {
           setImportOpen(false);
           toast.show(`Import finished: ${r.created} created, ${r.updated} updated.`);
           teams.reload();
-          groups.reload();
         }}
       />
       <ConfirmDialog

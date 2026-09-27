@@ -1,16 +1,13 @@
 import { EmailDelivery } from '../src/modules/delivery/email-delivery.entity';
 import { Client, createTestApp, sendStepNow, TestContext } from './helpers';
 
-describe('Teams, groups & templates (e2e)', () => {
+describe('Teams & templates (e2e)', () => {
   let ctx: TestContext;
   let admin: Client;
-  let groupA: string;
 
   beforeAll(async () => {
     ctx = await createTestApp();
     admin = await Client.login(ctx.app);
-    groupA = (await admin.post('/groups', { name: 'Summer Cup' }).expect(201))
-      .body.data.id;
   });
 
   afterAll(() => ctx.app.close());
@@ -18,14 +15,13 @@ describe('Teams, groups & templates (e2e)', () => {
   describe('teams', () => {
     let teamId: string;
 
-    it('creates a team with normalized emails and groups', async () => {
+    it('creates a team with normalized emails', async () => {
       const res = await admin
         .post('/teams', {
           name: ' FC Alpha ',
           contactName: 'Ann',
           email: 'ANN@alpha.test',
           ccEmails: ['Coach@Alpha.test'],
-          groupIds: [groupA],
         })
         .expect(201);
       teamId = res.body.data.id;
@@ -33,10 +29,22 @@ describe('Teams, groups & templates (e2e)', () => {
         name: 'FC Alpha',
         email: 'ann@alpha.test',
         ccEmails: ['coach@alpha.test'],
-        groups: [{ id: groupA, name: 'Summer Cup' }],
         unsubscribedAt: null,
       });
       expect(res.body.data.unsubscribeToken).toBeUndefined();
+      expect(res.body.data.groups).toBeUndefined();
+    });
+
+    it('has no groups anymore', async () => {
+      await admin.get('/groups').expect(404);
+      await admin
+        .post('/teams', {
+          name: 'With group',
+          contactName: 'X',
+          email: 'x@x.test',
+          groupIds: [],
+        })
+        .expect(400);
     });
 
     it('rejects duplicates, invalid emails and too many CCs', async () => {
@@ -60,7 +68,7 @@ describe('Teams, groups & templates (e2e)', () => {
         .expect(400);
     });
 
-    it('lists with search, group filter, pagination and archive toggle', async () => {
+    it('lists with search, pagination and archive toggle', async () => {
       await admin
         .post('/teams', {
           name: 'Beta United',
@@ -73,13 +81,6 @@ describe('Teams, groups & templates (e2e)', () => {
         'Beta United',
       ]);
       expect(search.body.meta).toMatchObject({ total: 1, page: 1, limit: 25 });
-
-      const byGroup = await admin
-        .get(`/teams?filter[group]=${groupA}`)
-        .expect(200);
-      expect(byGroup.body.data.map((t: { name: string }) => t.name)).toEqual([
-        'FC Alpha',
-      ]);
 
       await admin.patch(`/teams/${teamId}`, { isArchived: true }).expect(200);
       expect((await admin.get('/teams').expect(200)).body.meta.total).toBe(1);
@@ -100,21 +101,11 @@ describe('Teams, groups & templates (e2e)', () => {
       expect(res.body.data).toMatchObject({
         name: 'FC Alpha',
         notes: 'Pays late',
-        groups: [{ id: groupA }],
       });
     });
 
-    it('reports group team counts', async () => {
-      const groups = await admin.get('/groups').expect(200);
-      expect(groups.body.data).toEqual([
-        { id: groupA, name: 'Summer Cup', description: null, teamCount: 1 },
-      ]);
-      await admin.post('/groups', { name: 'Summer Cup' }).expect(409);
-    });
-
     it('imports CSV with dry run, validation errors and upsert', async () => {
-      const bad =
-        'name,contactName,email,ccEmails,groups\nGamma,Gus,not-an-email,,\n';
+      const bad = 'name,contactName,email,ccEmails\nGamma,Gus,not-an-email,\n';
       const badRes = await admin
         .post('/teams/import', { csv: bad, mode: 'create', dryRun: false })
         .expect(201);
@@ -123,6 +114,7 @@ describe('Teams, groups & templates (e2e)', () => {
       ]);
 
       const csv =
+        // An old export's "groups" column is ignored
         'name,contactName,email,ccEmails,groups\n' +
         'Gamma,Gus,gus@gamma.test,a@gamma.test;b@gamma.test,Summer Cup;Youth\n' +
         'FC Alpha,Anna,anna@alpha.test,,Youth\n';
@@ -144,26 +136,18 @@ describe('Teams, groups & templates (e2e)', () => {
         .expect(201);
       const gamma = (await admin.get('/teams?search=gamma')).body.data[0];
       expect(gamma.ccEmails).toEqual(['a@gamma.test', 'b@gamma.test']);
-      expect(gamma.groups.map((g: { name: string }) => g.name)).toEqual([
-        'Summer Cup',
-        'Youth',
-      ]);
       const alpha = (await admin.get(`/teams/${teamId}`)).body.data;
       expect(alpha.contactName).toBe('Anna');
-      expect(alpha.groups.map((g: { name: string }) => g.name)).toEqual([
-        'Summer Cup',
-        'Youth',
-      ]);
     });
 
     it('exports CSV', async () => {
       const res = await admin.get('/teams/export').expect(200);
       expect(res.headers['content-type']).toContain('text/csv');
       expect(res.text.split('\n')[0]).toBe(
-        'name,contactName,email,ccEmails,graduationYear,groups',
+        'name,contactName,email,ccEmails,graduationYear',
       );
       expect(res.text).toContain(
-        'Gamma,Gus,gus@gamma.test,a@gamma.test;b@gamma.test,,Summer Cup;Youth',
+        'Gamma,Gus,gus@gamma.test,a@gamma.test;b@gamma.test,',
       );
     });
 
@@ -183,13 +167,6 @@ describe('Teams, groups & templates (e2e)', () => {
         .getRepository(EmailDelivery)
         .find({ where: { step: { id: sent.steps[0].id } } });
       expect(left).toHaveLength(0);
-    });
-
-    it('deletes groups', async () => {
-      const g = (await admin.post('/groups', { name: 'Temp group' })).body.data;
-      await admin.patch(`/groups/${g.id}`, { description: 'x' }).expect(200);
-      await admin.delete(`/groups/${g.id}`).expect(200);
-      await admin.delete(`/groups/${g.id}`).expect(404);
     });
   });
 

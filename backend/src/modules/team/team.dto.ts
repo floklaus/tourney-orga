@@ -8,7 +8,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -62,10 +61,6 @@ export class CreateTeamDto {
   @IsString()
   @MaxLength(5000)
   notes?: string | null;
-
-  @IsOptionalNonNull()
-  @IsUUID('4', { each: true })
-  groupIds?: string[];
 }
 
 export class UpdateTeamDto {
@@ -106,10 +101,6 @@ export class UpdateTeamDto {
   notes?: string | null;
 
   @IsOptionalNonNull()
-  @IsUUID('4', { each: true })
-  groupIds?: string[];
-
-  @IsOptionalNonNull()
   @IsBoolean()
   isArchived?: boolean;
 }
@@ -125,31 +116,4 @@ export class ImportTeamsDto {
   @Type(() => Boolean)
   @IsBoolean()
   dryRun: boolean;
-}
-
-export class CreateGroupDto {
-  @Transform(trim)
-  @IsString()
-  @MinLength(1)
-  @MaxLength(200)
-  name: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  description?: string | null;
-}
-
-export class UpdateGroupDto {
-  @IsOptionalNonNull()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1)
-  @MaxLength(200)
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  description?: string | null;
 }

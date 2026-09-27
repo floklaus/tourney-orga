@@ -514,3 +514,11 @@ Aggregated per tournament so large tournaments don't flood the queue. `campaign`
 - New placeholder `{{participation.days}}`: the days, formatted like the tournament dates and separated by commas.
 - A tournament may last at most 60 days (422 otherwise).
 - Migration `ParticipationDays` backfills existing participations with all days of their tournament.
+
+## Team groups removed (v2.3)
+
+- The `/groups` endpoints and the `TeamGroup` type are gone.
+- `Team` has no `groups` field anymore, `POST`/`PATCH /teams` reject `groupIds` (400), and `Participation.team` has no `groups`.
+- The `group` filter is removed from `GET /teams` and `GET /participations`.
+- CSV columns are now `name,contactName,email,ccEmails,graduationYear`. A `groups` column in an older file is ignored.
+- Migration `RemoveTeamGroups` drops `team_groups` and `team_group_members`, deleting all group data. Rolling it back restores the tables only.

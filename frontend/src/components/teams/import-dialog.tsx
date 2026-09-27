@@ -10,7 +10,7 @@ import { SelectField, TextAreaField } from "@/components/ui/field";
 
 const T = {
   title: "Import teams from CSV",
-  columns: "Columns: name,contactName,email,ccEmails,graduationYear,groups — separate multiple CC emails and groups with “;”. Unknown groups are created. An empty graduationYear keeps the current value.",
+  columns: "Columns: name,contactName,email,ccEmails,graduationYear — separate multiple CC emails with “;”. An empty graduationYear keeps the current value.",
   file: "CSV file",
   paste: "Or paste CSV",
   mode: "Existing team names",
@@ -73,7 +73,7 @@ function ImportForm({ onClose, onImported }: { onClose: () => void; onImported: 
           setCsv(e.target.value);
           setPreview(null);
         }}
-        placeholder={"name,contactName,email,ccEmails,graduationYear,groups\nFC Example,Jane Doe,jane@example.org,coach@example.org,2031,Summer Cup 2026"}
+        placeholder={"name,contactName,email,ccEmails,graduationYear\nFC Example,Jane Doe,jane@example.org,coach@example.org,2031"}
       />
       <SelectField
         label={T.mode}

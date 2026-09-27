@@ -13,17 +13,10 @@ import {
 import type { Response } from 'express';
 import { runListQuery } from '../../common/list/list-engine';
 import { ListQueryDto } from '../../common/list/list-query.dto';
-import { GroupService } from './group.service';
 import { teamsToCsv } from './team-csv';
 import { TeamImportService } from './team-import.service';
-import {
-  CreateGroupDto,
-  CreateTeamDto,
-  ImportTeamsDto,
-  UpdateGroupDto,
-  UpdateTeamDto,
-} from './team.dto';
-import { GROUP_LIST_SPEC, TEAM_LIST_SPEC } from './team.list-spec';
+import { CreateTeamDto, ImportTeamsDto, UpdateTeamDto } from './team.dto';
+import { TEAM_LIST_SPEC } from './team.list-spec';
 import { toTeamResponse } from './team.mapper';
 import { TeamService } from './team.service';
 
@@ -101,31 +94,5 @@ export class TeamController {
       await this.teams.setUnsubscribed(team, false),
       await this.teams.seasonClock(),
     );
-  }
-}
-
-@Controller('groups')
-export class GroupController {
-  constructor(private readonly groups: GroupService) {}
-
-  @Get()
-  async list(@Query() query: ListQueryDto) {
-    return runListQuery(await this.groups.findAll(), GROUP_LIST_SPEC, query);
-  }
-
-  @Post()
-  create(@Body() dto: CreateGroupDto) {
-    return this.groups.create(dto);
-  }
-
-  @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateGroupDto) {
-    return this.groups.update(id, dto);
-  }
-
-  @Delete(':id')
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.groups.remove(id);
-    return null;
   }
 }

@@ -6,7 +6,7 @@ import type {
   ParticipationRequiredVariable,
   TournamentRequiredVariable,
 } from "./email-types";
-import type { IsoDateTime, NamedRef, UserRef, Uuid } from "./types";
+import type { IsoDateTime, UserRef, Uuid } from "./types";
 
 export type ParticipationStatus =
   | "SIGNED_UP"
@@ -108,7 +108,6 @@ export interface Participation {
     graduationYear: number | null;
     /** Calculated from the graduation year for the tournament's start date. */
     ageGroup: string | null;
-    groups: NamedRef[];
   };
   /** Tournament days the team plays on (YYYY-MM-DD), at least one. */
   days: string[];

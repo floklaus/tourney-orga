@@ -17,7 +17,6 @@ describe('Tournaments & participation (e2e)', () => {
   let ctx: TestContext;
   let admin: Client;
   const teams: Record<string, string> = {};
-  let groupId: string;
 
   const createTournament = async (body: Record<string, unknown>) =>
     (
@@ -50,14 +49,12 @@ describe('Tournaments & participation (e2e)', () => {
   beforeAll(async () => {
     ctx = await createTestApp();
     admin = await Client.login(ctx.app);
-    groupId = (await admin.post('/groups', { name: 'Girls' })).body.data.id;
     for (const name of ['Orange', 'Black', 'Grey']) {
       teams[name] = (
         await admin.post('/teams', {
           name,
           contactName: 'C',
           email: `${name}@t.test`,
-          groupIds: name === 'Grey' ? [] : [groupId],
         })
       ).body.data.id;
     }
@@ -317,10 +314,10 @@ describe('Tournaments & participation (e2e)', () => {
         .expect(409);
     });
 
-    it('filters participations by group, status, overdue and facets', async () => {
+    it('filters participations by team, status, overdue and facets', async () => {
       const res = await admin
         .get(
-          `/participations?filter[tournament]=${tournamentId}&filter[group]=${groupId}&sort=team`,
+          `/participations?filter[tournament]=${tournamentId}&filter[team]=${teams.Orange},${teams.Black}&sort=team`,
         )
         .expect(200);
       expect(

@@ -1,5 +1,4 @@
 import { ListSpec, tags } from '../../common/list/list-spec';
-import { GroupResponse } from './group.service';
 import { toTeamResponse } from './team.mapper';
 
 export type TeamListItem = ReturnType<typeof toTeamResponse> & {
@@ -20,12 +19,6 @@ export const TEAM_LIST_SPEC: ListSpec<TeamListItem> = {
       label: 'Graduation year',
       type: 'tag',
       values: (t) => tags(t.graduationYear ? [String(t.graduationYear)] : []),
-    },
-    {
-      key: 'group',
-      label: 'Group',
-      type: 'ref',
-      values: (t) => t.groups.map((g) => ({ value: g.id, label: g.name })),
     },
     {
       key: 'archived',
@@ -62,11 +55,4 @@ export const TEAM_LIST_SPEC: ListSpec<TeamListItem> = {
   },
   defaultSort: 'name',
   defaultFilters: { archived: ['false'] },
-};
-
-export const GROUP_LIST_SPEC: ListSpec<GroupResponse> = {
-  search: (g) => [g.name, g.description],
-  filters: [],
-  sorts: { name: (g) => g.name, teamCount: (g) => g.teamCount },
-  defaultSort: 'name',
 };

@@ -46,7 +46,7 @@ It covers two things (plus tournament tracking, §4.5d):
 
 ## 3. Core Journeys
 
-**J1 — Maintain teams (M).** Add, edit, archive and import teams (name, contact name, email, optional CC addresses). Put teams into **groups** such as "Summer Cup 2026" or "Youth teams" to target mailings.
+**J1 — Maintain teams (M).** Add, edit, archive and import teams (name, contact name, email, optional CC addresses). Teams are reached through their tournament participations.
 
 **J2 — Write templates (M).** Create a template with subject and body, insert placeholders, preview it with a sample team, and send a test to yourself.
 
@@ -60,13 +60,13 @@ It covers two things (plus tournament tracking, §4.5d):
 
 ## 4. Functional Requirements
 
-### 4.1 Teams & Groups
+### 4.1 Teams
 | ID | Requirement | P |
 |---|---|:-:|
 | TEAM-1 | A team has a name (unique), contact name, primary email, optional CC emails (max 5) and optional notes. | M |
 | TEAM-2 | Teams can be archived. Archived teams receive nothing and are hidden by default, but still appear in delivery history. | M |
-| TEAM-3 | A group has a name (unique) and optional description. Teams ↔ groups is many-to-many. | M |
-| TEAM-4 | CSV import (name, contact name, email, cc, graduation year, groups) with a preview, per-row validation errors, and an update-or-create choice for existing team names. CSV export. | S |
+| TEAM-3 | *(Removed: team groups. Teams are organized by tournament participation and age group.)* | — |
+| TEAM-4 | CSV import (name, contact name, email, cc, graduation year) with a preview, per-row validation errors, and an update-or-create choice for existing team names. CSV export. | S |
 | TEAM-5 | Email addresses are validated on save. A team marked `unsubscribed` (§4.5) is shown with a badge. | M |
 | TEAM-6 | A team has an optional graduation year (class of). Its age group is calculated as school grade + 6 (8th grade → U14) and rolls over on the 1st of a configurable month (default September). Sign-up defaults the participation's age group to the tournament group matching the team: a division named after the graduation year, else the youngest `U<n>`/`<n>U` group with n ≥ the team's age at the tournament start. | S |
 
@@ -157,7 +157,7 @@ Sending through the mailbox is optional. In manual mode the app only prepares ea
 ### 4.5e Lists
 | ID | Requirement | P |
 |---|---|:-:|
-| LST-1 | Every entity list (teams, groups, templates, users, deliveries, tournaments, participations) uses one generic list API and one table component: search, multi-select filters with counts (OR within a filter, AND across filters), sorting and paging, with the state kept in the URL. | M |
+| LST-1 | Every entity list (teams, templates, users, deliveries, tournaments, participations) uses one generic list API and one table component: search, multi-select filters with counts (OR within a filter, AND across filters), sorting and paging, with the state kept in the URL. | M |
 
 ### 4.6 Settings
 | ID | Requirement | P |
@@ -185,8 +185,7 @@ Setting                                 (single row)
 |---|---|---|
 | **User** | `users` | `email` (unique), `passwordHash`, `firstName`, `lastName`, `isActive`, `lastLoginAt?` |
 | **Invitation** | `invitations` | `email`, `tokenHash` (unique), `invitedBy` (User), `expiresAt`, `acceptedAt?`, `revokedAt?` |
-| **Team** | `teams` | `name` (unique), `contactName`, `email`, `ccEmails` (text[]), `notes?`, `isArchived`, `unsubscribedAt?`, `unsubscribeToken` (unique, random), `groups` (M:N via `team_group_members`) |
-| **TeamGroup** | `team_groups` | `name` (unique), `description?`, `teams` |
+| **Team** | `teams` | `name` (unique), `contactName`, `email`, `ccEmails` (text[]), `notes?`, `isArchived`, `unsubscribedAt?`, `unsubscribeToken` (unique, random), `graduationYear?` |
 | **EmailTemplate** | `email_templates` | `name` (unique), `subject`, `bodyHtml`, `bodyText` |
 | **Tournament** | `tournaments` | `name`, `url?`, `startDate`, `endDate`, `description?`, `ageGroups`, `milestones` (jsonb), `variables` (jsonb), `emailPlan` (jsonb) |
 | **Participation** | `participations` | `tournament`, `team`, `ageGroup?`, `status`, `notes?`, `variables` (jsonb overrides), `withdrawnAt?`, `version` |
@@ -265,7 +264,7 @@ The app's default cap (1,000 recipients / 24 h) leaves room for the organizer's 
 | Concern | Decision |
 |---|---|
 | Frontend | Next.js + Tailwind CSS v4 (as in requirements.md §4) |
-| Backend | NestJS 11 modules: `auth`, `user`, `team` (incl. groups), `template`, `tournament` (tournaments, participations), `email` (participation email steps), `attention` (work queue), `delivery` (scheduler + sender), `settings`, `health` |
+| Backend | NestJS 11 modules: `auth`, `user`, `team`, `template`, `tournament` (tournaments, participations), `email` (participation email steps), `attention` (work queue), `delivery` (scheduler + sender), `settings`, `health` |
 | DB | PostgreSQL + TypeORM, migrations only (`synchronize: false`) |
 | Scheduler | `@nestjs/schedule` cron every minute. It claims due steps and deliveries with `SELECT … FOR UPDATE SKIP LOCKED`, so no Redis or queue system is needed at this volume. |
 | Email | Nodemailer against `smtp.gmail.com` (XOAUTH2 with automatic token refresh, or app password), Handlebars for placeholders, `sanitize-html` |
@@ -275,7 +274,7 @@ The app's default cap (1,000 recipients / 24 h) leaves room for the organizer's 
 
 ## 8. Milestones
 
-1. **Foundation:** auth, invitations and admin management, settings, teams and groups (incl. CSV import), migrations, Coolify deploy.
+1. **Foundation:** auth, invitations and admin management, settings, teams (incl. CSV import), migrations, Coolify deploy.
 2. **Templates:** editor, placeholders, preview, test send.
 3. **Sending:** delivery engine, delivery log, unsubscribe.
 4. **Tournaments:** participation process, email plans, per-team emails and variables, Gantt chart, work queue.

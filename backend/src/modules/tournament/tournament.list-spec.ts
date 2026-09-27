@@ -71,12 +71,6 @@ export const PARTICIPATION_LIST_SPEC: ListSpec<ParticipationResponse> = {
       values: (p) => [{ value: p.team.id, label: p.team.name }],
     },
     {
-      key: 'group',
-      label: 'Team group',
-      type: 'ref',
-      values: (p) => p.team.groups.map((g) => ({ value: g.id, label: g.name })),
-    },
-    {
       key: 'ageGroup',
       label: 'Age group',
       type: 'tag',

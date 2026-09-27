@@ -94,7 +94,6 @@ function ParticipationView({ participation: p, reload }: { participation: Partic
                 <Link href={`/teams/${p.team.id}`} className="text-brand-primary underline">
                   {p.team.name}
                 </Link>
-                {p.team.groups.length > 0 && <span className="block text-xs text-slate-600">{p.team.groups.map((g) => g.name).join(", ")}</span>}
               </Item>
               <Item label={T.ageGroup}>
                 {p.ageGroup ?? "—"}

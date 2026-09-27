@@ -10,7 +10,6 @@ import {
 import { SettingsService } from '../settings/settings.service';
 import { todayIn } from '../tournament/tournament-clock';
 import { SeasonClock } from './domain/age-group';
-import { GroupService } from './group.service';
 import { Team } from './team.entity';
 import { CreateTeamDto, UpdateTeamDto } from './team.dto';
 
@@ -21,7 +20,6 @@ export class TeamService {
   constructor(
     @InjectRepository(Team) private readonly teams: Repository<Team>,
     @InjectDataSource() private readonly dataSource: DataSource,
-    private readonly groups: GroupService,
     private readonly settings: SettingsService,
   ) {}
 
@@ -31,7 +29,7 @@ export class TeamService {
   }
 
   findAll(): Promise<Team[]> {
-    return this.teams.find({ relations: { groups: true } });
+    return this.teams.find();
   }
 
   /** Tournaments each team participates in (not withdrawn), for list filtering. */
@@ -53,23 +51,17 @@ export class TeamService {
   }
 
   findAllForExport(): Promise<Team[]> {
-    return this.teams.find({
-      relations: { groups: true },
-      order: { name: 'ASC' },
-    });
+    return this.teams.find({ order: { name: 'ASC' } });
   }
 
   async findOne(id: string): Promise<Team> {
-    const team = await this.teams.findOne({
-      where: { id },
-      relations: { groups: true },
-    });
+    const team = await this.teams.findOneBy({ id });
     if (!team) throw notFound('Team');
     return team;
   }
 
   findByName(name: string): Promise<Team | null> {
-    return this.teams.findOne({ where: { name }, relations: { groups: true } });
+    return this.teams.findOneBy({ name });
   }
 
   findByUnsubscribeToken(unsubscribeToken: string): Promise<Team | null> {
@@ -85,19 +77,13 @@ export class TeamService {
       graduationYear: dto.graduationYear ?? null,
       notes: dto.notes ?? null,
       unsubscribeToken: randomToken(),
-      groups: await this.groups.findByIds(dto.groupIds),
     });
     return this.findOne((await this.saveUnique(team)).id);
   }
 
   async update(id: string, dto: UpdateTeamDto): Promise<Team> {
     const team = await this.findOne(id);
-    const { groupIds, ...fields } = dto;
-    const groups =
-      groupIds === undefined
-        ? team.groups
-        : await this.groups.findByIds(groupIds);
-    await this.saveUnique({ ...team, ...fields, groups });
+    await this.saveUnique({ ...team, ...dto });
     return this.findOne(id);
   }
 

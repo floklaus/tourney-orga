@@ -136,7 +136,7 @@ cp deploy/.env.coolify.example deploy/.env.coolify   # fill in the Coolify URL, 
 backend/src/modules/
   auth/        login, sessions (JWT cookie), CSRF guard, password reset
   user/        admins, invitations
-  team/        teams, groups, CSV import/export
+  team/        teams, age groups, CSV import/export
   template/    email templates, placeholder rendering, preview
   email/       participation email steps, email plans, variables, send-time calculation
   attention/   work queue

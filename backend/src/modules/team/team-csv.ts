@@ -14,7 +14,6 @@ export const CSV_COLUMNS = [
   'email',
   'ccEmails',
   'graduationYear',
-  'groups',
 ] as const;
 
 export interface TeamCsvRow {
@@ -25,7 +24,6 @@ export interface TeamCsvRow {
   ccEmails: string[];
   /** Undefined when the cell is empty: an import then keeps the team's current value. */
   graduationYear?: number;
-  groups: string[];
 }
 
 export interface CsvParseResult {
@@ -95,7 +93,6 @@ export function parseTeamCsv(csv: string): CsvParseResult {
       email,
       ccEmails,
       graduationYear,
-      groups: splitList(record.groups),
     });
   });
   return result;
@@ -113,7 +110,6 @@ export function teamsToCsv(teams: Team[]): string {
       email: safeCell(t.email),
       ccEmails: safeCell(t.ccEmails.join(';')),
       graduationYear: t.graduationYear ?? '',
-      groups: safeCell((t.groups ?? []).map((g) => g.name).join(';')),
     })),
     { header: true, columns: [...CSV_COLUMNS] },
   );

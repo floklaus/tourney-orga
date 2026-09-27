@@ -14,7 +14,7 @@ export interface ClockContext {
   seasonStartMonth: number;
 }
 
-/** Requires tournament, team (+groups) and history loaded. */
+/** Requires tournament, team and history loaded. */
 export function toParticipationResponse(
   p: Participation,
   clock: ClockContext,
@@ -48,7 +48,6 @@ export function toParticipationResponse(
         p.tournament.startDate,
         clock.seasonStartMonth,
       ),
-      groups: (p.team.groups ?? []).map((g) => ({ id: g.id, name: g.name })),
     },
     ageGroup: p.ageGroup,
     days: p.days,

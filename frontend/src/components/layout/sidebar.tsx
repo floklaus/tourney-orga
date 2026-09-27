@@ -20,7 +20,6 @@ const NAV_ITEMS: { href: string; label: string; showQueueCount?: boolean }[] = [
   { href: "/deliveries", label: "Emails" },
   { href: "/templates", label: "Templates" },
   { href: "/teams", label: "Teams" },
-  { href: "/groups", label: "Groups" },
   { href: "/users", label: "Users" },
   { href: "/settings", label: "Settings" },
 ];

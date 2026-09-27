@@ -166,6 +166,6 @@ describe('Team age groups from graduation year (e2e)', () => {
       (await admin.get(`/teams/${teams['No year']}`)).body.data.graduationYear,
     ).toBe(2030);
     const exported = (await admin.get('/teams/export')).text;
-    expect(exported).toContain('No year,C,noyear@t.test,,2030,');
+    expect(exported).toContain('No year,C,noyear@t.test,,2030\n');
   });
 });

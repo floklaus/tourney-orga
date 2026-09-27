@@ -7,7 +7,6 @@ import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/dates";
 import { errorMessage } from "@/lib/errors";
 import { useListQuery, type ListFilters } from "@/lib/list-query";
-import { useGroups } from "@/lib/queries";
 import { useApi } from "@/lib/use-api";
 import { useListData } from "@/lib/use-list-data";
 import type { Participation, Team } from "@/lib/types";
@@ -60,7 +59,6 @@ export function TeamPage({ id }: { id: string }) {
 function TeamView({ team, reload }: { team: Team; reload: () => void }) {
   const router = useRouter();
   const toast = useToast();
-  const groups = useGroups();
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -113,7 +111,6 @@ function TeamView({ team, reload }: { team: Team; reload: () => void }) {
           <TeamForm
             key={team.updatedAt}
             team={team}
-            groups={groups.data ?? []}
             onSaved={(saved) => {
               toast.show(T.saved(saved.name));
               reload();

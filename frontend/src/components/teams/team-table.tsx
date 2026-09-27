@@ -13,7 +13,6 @@ const T = {
   contact: "Contact",
   ageGroup: "Age group",
   classOf: (year: number) => `Class of ${year}`,
-  groups: "Groups",
   actions: "Actions",
   archived: "Archived",
   unsubscribed: "Unsubscribed",
@@ -87,21 +86,6 @@ export function teamColumns(onAction: (action: TeamAction, team: Team) => void):
             </div>
           )}
         </>
-      ),
-    },
-    {
-      id: "groups",
-      header: T.groups,
-      hideOnMobile: true,
-      cell: (team) => (
-        <div className="flex flex-wrap gap-1">
-          {team.groups.length === 0 && <span className="text-slate-500">—</span>}
-          {team.groups.map((g) => (
-            <Badge key={g.id} tone="teal">
-              {g.name}
-            </Badge>
-          ))}
-        </div>
       ),
     },
     { id: "actions", header: T.actions, align: "right", cell: (team) => <TeamActions team={team} onAction={onAction} /> },

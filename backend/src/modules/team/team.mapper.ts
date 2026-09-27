@@ -16,9 +16,6 @@ export const toTeamResponse = (team: Team, season: SeasonClock) => ({
   notes: team.notes,
   isArchived: team.isArchived,
   unsubscribedAt: team.unsubscribedAt,
-  groups: (team.groups ?? [])
-    .map((g) => ({ id: g.id, name: g.name }))
-    .sort((a, b) => a.name.localeCompare(b.name)),
   createdAt: team.createdAt,
   updatedAt: team.updatedAt,
 });

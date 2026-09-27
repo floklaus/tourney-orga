@@ -38,7 +38,7 @@ import {
 
 const RELATIONS = {
   tournament: true,
-  team: { groups: true },
+  team: true,
   history: { changedBy: true },
 } as const;
 const STALE =

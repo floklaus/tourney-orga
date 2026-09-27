@@ -49,7 +49,6 @@ function participationColumns(actions: ParticipationActions, { hideTournament, h
           <Link href={`/participations/${p.id}`} className="font-medium text-brand-primary underline" aria-label={T.openDetails(p.team.name)}>
             {p.team.name}
           </Link>
-          {p.team.groups.length > 0 && <span className="block text-xs text-slate-600">{p.team.groups.map((g) => g.name).join(", ")}</span>}
         </>
       ),
     },

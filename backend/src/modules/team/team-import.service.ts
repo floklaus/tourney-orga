@@ -2,8 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { randomToken } from '../../common/crypto';
-import { GroupService } from './group.service';
-import { parseTeamCsv, TeamCsvRow } from './team-csv';
+import { parseTeamCsv } from './team-csv';
 import { Team } from './team.entity';
 import { ImportTeamsDto } from './team.dto';
 
@@ -15,17 +14,12 @@ export interface ImportResult {
 
 @Injectable()
 export class TeamImportService {
-  constructor(
-    @InjectDataSource() private readonly dataSource: DataSource,
-    private readonly groups: GroupService,
-  ) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
   /** Validates everything first; writes only when there are no errors and dryRun is false. */
   async import(dto: ImportTeamsDto): Promise<ImportResult> {
     const { rows, errors } = parseTeamCsv(dto.csv);
-    const existing = await this.dataSource
-      .getRepository(Team)
-      .find({ relations: { groups: true } });
+    const existing = await this.dataSource.getRepository(Team).find();
     const byName = new Map(existing.map((t) => [t.name, t]));
 
     let created = 0;
@@ -47,11 +41,6 @@ export class TeamImportService {
     if (dto.dryRun || errors.length > 0) return result;
 
     await this.dataSource.transaction(async (em) => {
-      const groups = await this.groups.findOrCreateByNames(
-        rows.flatMap((r) => r.groups),
-      );
-      const groupsFor = (row: TeamCsvRow) =>
-        groups.filter((g) => row.groups.includes(g.name));
       const teams = rows.map((row) => {
         const current = byName.get(row.name);
         const fields = {
@@ -64,23 +53,11 @@ export class TeamImportService {
           }),
         };
         return current
-          ? {
-              ...current,
-              ...fields,
-              groups: dedupe([...current.groups, ...groupsFor(row)]),
-            }
-          : em.create(Team, {
-              ...fields,
-              unsubscribeToken: randomToken(),
-              groups: groupsFor(row),
-            });
+          ? { ...current, ...fields }
+          : em.create(Team, { ...fields, unsubscribeToken: randomToken() });
       });
       await em.save(Team, teams);
     });
     return result;
   }
 }
-
-const dedupe = <T extends { id: string }>(items: T[]) => [
-  ...new Map(items.map((i) => [i.id, i])).values(),
-];

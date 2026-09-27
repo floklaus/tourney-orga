@@ -98,13 +98,8 @@ export function AddTeamsForm({ tournament, onClose, onAdded }: { tournament: Tou
   }
 
   function teamHint(team: Team): string | undefined {
-    const parts = [
-      needsAgeGroup && team.graduationYear !== null
-        ? T.teamHint(team.graduationYear, matchAgeGroup(team.graduationYear, seasonStartMonth, tournament.startDate, tournament.ageGroups))
-        : null,
-      team.groups.map((g) => g.name).join(", "),
-    ].filter(Boolean);
-    return parts.join(" · ") || undefined;
+    if (!needsAgeGroup || team.graduationYear === null) return undefined;
+    return T.teamHint(team.graduationYear, matchAgeGroup(team.graduationYear, seasonStartMonth, tournament.startDate, tournament.ageGroups));
   }
 
   if (result) {

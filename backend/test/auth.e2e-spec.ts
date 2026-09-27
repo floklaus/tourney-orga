@@ -48,15 +48,15 @@ describe('Auth, users & invitations (e2e)', () => {
 
   it('rejects state-changing requests without the CSRF header', async () => {
     const res = await admin.agent
-      .post('/api/v1/groups')
-      .send({ name: 'No CSRF' })
+      .post('/api/v1/teams')
+      .send({ name: 'No CSRF', contactName: 'C', email: 'c@c.test' })
       .expect(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
   });
 
   it('validates request bodies', async () => {
     const res = await admin
-      .post('/groups', { name: '', unknown: 1 })
+      .post('/teams', { name: '', unknown: 1 })
       .expect(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
     expect(res.body.error.details).toEqual(

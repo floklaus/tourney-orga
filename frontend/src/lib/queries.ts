@@ -11,7 +11,6 @@ import type {
   Quota,
   Settings,
   Team,
-  TeamGroup,
   Tournament,
 } from "./types";
 
@@ -31,7 +30,6 @@ export async function fetchAllTeams(): Promise<Team[]> {
   return all;
 }
 
-export const useGroups = () => useApi("groups:all", () => api.get<TeamGroup[]>("/groups", { ...ALL, sort: "name" }));
 export const useTemplates = () => useApi("templates:all", () => api.get<EmailTemplate[]>("/templates", { ...ALL, sort: "name" }));
 export const usePlaceholders = () =>
   useApi("placeholders", () => api.get<Placeholder[]>("/templates/placeholders"));
