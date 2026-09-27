@@ -15,6 +15,6 @@ USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD wget -qO- http://127.0.0.1:3001/api/v1/health || exit 1
-# Migrations run separately (Coolify pre-deploy command / the `migrate` service), never here,
-# so that several API replicas cannot race on them.
-CMD ["node", "dist/main.js"]
+# RUN_MIGRATIONS=true (Coolify) runs pending migrations first, behind an advisory lock.
+# docker-compose.yml leaves it off and uses its one-off `migrate` service instead.
+CMD ["sh", "-c", "if [ \"$RUN_MIGRATIONS\" = true ]; then node dist/database/migrate.js || exit 1; fi; exec node dist/main.js"]

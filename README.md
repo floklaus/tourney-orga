@@ -91,13 +91,44 @@ Emails are sent via `smtp.gmail.com` from the mailbox in `MAIL_USER`.
 
 ## Deployment (Coolify)
 
-1. Create a **Docker Compose** resource from this repository ([docker-compose.yml](docker-compose.yml)).
-2. Add the variables from [.env.example](.env.example) in Coolify's environment settings. Use a long random `JWT_SECRET` (`openssl rand -base64 48`) and `COOKIE_SECURE=true`.
-3. Assign your domain to the `web` service. The API is reached only through the web app's `/api` proxy, so `APP_URL` and `API_PUBLIC_URL` are both that domain.
-4. Deploy. The `migrate` service runs pending migrations before `api` starts, and API containers never run migrations themselves.
-5. Set up daily PostgreSQL backups for the `pgdata` volume in Coolify.
+[deploy/coolify.sh](deploy/coolify.sh) sets everything up through the Coolify API (tested with Coolify 4.1.2). It creates one Coolify project with:
 
-`API_URL` for the web app is baked in at build time (a Docker build arg; default `http://api:3001`).
+| Resource | What | Domain |
+|---|---|---|
+| `tourney-orga-db` | Managed PostgreSQL 16 with daily Coolify backups | internal only |
+| `tourney-orga-api` | `backend/Dockerfile` (port 3001) | https://tourney-orga-api.challenge-limits.com |
+| `tourney-orga-web` | `frontend/Dockerfile` (port 3000) | https://tourney-orga.challenge-limits.com |
+
+- **How the UI reaches the API:** the UI proxies `/api` to the API over Coolify's internal network, using the network alias `tourney-orga-api`. The browser only ever talks to the UI domain, so cookies stay first-party.
+- **Why the API domain is public:** for the one-click unsubscribe links in emails.
+- **Migrations:** the API runs pending migrations on start (`RUN_MIGRATIONS=true`, behind a database lock).
+- **First admin:** created from `ADMIN_EMAIL` and `ADMIN_PASSWORD` when the database is empty.
+
+**Setup**
+
+```bash
+cp deploy/.env.coolify.example deploy/.env.coolify   # fill in the Coolify URL, token, server UUID, ADMIN_EMAIL
+./deploy/coolify.sh status   # checks the connection
+./deploy/coolify.sh init     # creates the database, API and UI, then deploys both
+```
+
+`init` generates `POSTGRES_PASSWORD`, `JWT_SECRET` and `ADMIN_PASSWORD` if they are empty and saves them in `deploy/.env.coolify`. That file and `deploy/.coolify-state` are gitignored.
+
+**Commands**
+
+| Command | What it does |
+|---|---|
+| `init` | Creates the project, database (with a backup schedule), API and UI, pushes the configuration and deploys both. Safe to re-run: existing resources are reused. |
+| `update [backend\|frontend\|all]` | Pushes the configuration (env vars, domains, ports) and redeploys. Use it after changing `deploy/.env.coolify` or to deploy the latest `main`. |
+| `reset [--yes]` | **Deletes the database with all its data** and its backup schedule, then creates an empty one and redeploys the API. Migrations run and the first admin is created again. |
+| `teardown [--yes]` | **Deletes the apps, the database with all its data and the project.** `deploy/.env.coolify` is kept. |
+| `status` | Shows each resource's state and whether both domains respond. |
+
+`reset` and `teardown` ask you to type the project name. `--yes` skips that question (for scripts).
+
+**Mail:** `MAIL_AUTH_MODE=NONE` (the default) runs the app in manual sending mode. To send through Gmail, fill in the Google settings in `deploy/.env.coolify` and run `./deploy/coolify.sh update backend`.
+
+**Without the script:** [docker-compose.yml](docker-compose.yml) still runs the whole stack on any Docker host (`docker compose up`). Its one-off `migrate` service runs the migrations.
 
 ## Repository layout
 
