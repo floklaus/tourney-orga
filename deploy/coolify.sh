@@ -8,6 +8,10 @@
 #   - backend  : Dockerfile build of backend/  (NestJS API, port 3001)
 #   - frontend : Dockerfile build of frontend/ (Next.js, port 3000)
 #
+# Both apps build from GitHub through the Coolify GitHub App (COOLIFY_GITHUB_APP_NAME)
+# with auto-deploy on: a push to the branch redeploys the app whose folder changed
+# (watch paths backend/** and frontend/**).
+#
 # The frontend proxies /api to the backend over Coolify's internal network
 # (network alias, see COOLIFY_API_ALIAS), so the browser only talks to the UI
 # domain and cookies stay first-party. The API domain is public for one-click
@@ -48,8 +52,10 @@ load_env() {
 
   : "${COOLIFY_PROJECT_NAME:=tourney-orga}"
   : "${COOLIFY_ENVIRONMENT_NAME:=production}"
-  : "${COOLIFY_GIT_REPOSITORY:=https://github.com/floklaus/tourney-orga}"
+  : "${COOLIFY_GIT_REPOSITORY:=floklaus/tourney-orga}"
   : "${COOLIFY_GIT_BRANCH:=main}"
+  # GitHub App registered in Coolify (Sources); it delivers the push webhooks.
+  : "${COOLIFY_GITHUB_APP_NAME:=tourney-orga}"
 
   : "${APP_DOMAIN:=tourney-orga.challenge-limits.com}"
   : "${API_DOMAIN:=tourney-orga-api.challenge-limits.com}"
@@ -233,6 +239,29 @@ delete_and_wait() { # LIST_PATH UUID LABEL
   done
 }
 
+# --- GitHub App (source of both apps) ---------------------------------------
+resolve_github_app() {
+  [ -z "${GITHUB_APP_UUID:-}" ] || return 0
+  api_ok GET /github-apps
+  local found; found="$(printf '%s' "$RESP_BODY" | NAME="$COOLIFY_GITHUB_APP_NAME" python3 -c '
+import sys, json, os
+d = json.load(sys.stdin)
+for g in (d if isinstance(d, list) else d.get("data", [])):
+    if g.get("name") == os.environ["NAME"]: print(g.get("uuid", ""), g.get("id", "")); break
+')"
+  [ -n "$found" ] || die "GitHub App '$COOLIFY_GITHUB_APP_NAME' not found in Coolify (Sources); set COOLIFY_GITHUB_APP_NAME"
+  GITHUB_APP_UUID="${found% *}"; GITHUB_APP_ID="${found#* }"
+  export GITHUB_APP_UUID GITHUB_APP_ID
+  info "building from GitHub App '$COOLIFY_GITHUB_APP_NAME' (auto-deploy on push to $COOLIFY_GIT_BRANCH)"
+}
+
+# True when the app pulls through our GitHub App (Coolify's API cannot switch an app's source).
+uses_github_app() { # APP_UUID
+  api_ok GET "/applications/$1"
+  # "Public GitHub" is a GitHub source too (id 0), so the id decides.
+  [ "$(json_field source_id)" = "$GITHUB_APP_ID" ]
+}
+
 # --- applications -----------------------------------------------------------
 app_settings() { # KIND -> JSON for fields this script owns (sent on create and update)
   APP_KIND="$1" python3 <<'PY'
@@ -243,6 +272,9 @@ print(json.dumps({
     "ports_exposes": "3001" if backend else "3000",
     "base_directory": "/backend" if backend else "/frontend",
     "dockerfile_location": "/Dockerfile",
+    # Push webhooks only redeploy the app whose folder changed.
+    "watch_paths": "backend/**" if backend else "frontend/**",
+    "is_auto_deploy_enabled": True,
     **({"custom_network_aliases": os.environ["COOLIFY_API_ALIAS"]} if backend else {}),
 }))
 PY
@@ -258,6 +290,7 @@ body.update({
     "environment_name": os.environ["COOLIFY_ENVIRONMENT_NAME"],
     "git_repository": os.environ["COOLIFY_GIT_REPOSITORY"],
     "git_branch": os.environ["COOLIFY_GIT_BRANCH"],
+    "github_app_uuid": os.environ["GITHUB_APP_UUID"],
     "build_pack": "dockerfile",
     "name": os.environ["COOLIFY_API_APP_NAME" if os.environ["APP_KIND"] == "backend" else "COOLIFY_WEB_APP_NAME"],
     "instant_deploy": False,
@@ -268,14 +301,21 @@ PY
 
 ensure_app() { # KIND STATE_KEY NAME -> prints uuid
   local kind="$1" key="$2" name="$3" uuid
+  resolve_github_app
   uuid="$(resolve "$key" /applications "$name")"
+  if [ -n "$uuid" ] && ! uses_github_app "$uuid"; then
+    # Created before the GitHub App existed: recreate it (the database is not touched).
+    info "$kind app '$name' does not build from the GitHub App; recreating it"
+    delete_and_wait /applications "$uuid" "$kind app"
+    state_clear "$key"; uuid=""
+  fi
   if [ -z "$uuid" ]; then
     info "creating $kind app '$name'"
-    api_ok POST /applications/public "$(create_body "$kind")"
+    api_ok POST /applications/private-github-app "$(create_body "$kind")"
     uuid="$(json_field uuid)"; [ -n "$uuid" ] || die "no $kind app uuid in: $RESP_BODY"
     state_set "$key" "$uuid"
   else
-    info "$kind app '$name' exists ($uuid); updating domain and port"
+    info "$kind app '$name' exists ($uuid); updating its settings"
     api_ok PATCH "/applications/$uuid" "$(app_settings "$kind")"
   fi
   printf '%s' "$uuid"
@@ -402,7 +442,10 @@ cmd_status() {
     IFS=: read -r label key path name <<<"$spec"
     uuid="$(resolve "$key" "$path" "$name")"
     if [ -z "$uuid" ]; then info "$label: not created"; continue; fi
-    api GET "$path/$uuid"; info "$label '$name' ($uuid): $(json_field status)"
+    api GET "$path/$uuid"
+    local extra=""
+    [ "$path" != /applications ] || extra=" · source: $(json_field git_repository)@$(json_field git_branch)"
+    info "$label '$name' ($uuid): $(json_field status)$extra"
   done
   for url in "https://$API_DOMAIN/api/v1/health" "https://$APP_DOMAIN/login"; do
     info "$url -> HTTP $(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$url" || true)"

@@ -99,6 +99,7 @@ Emails are sent via `smtp.gmail.com` from the mailbox in `MAIL_USER`.
 | `tourney-orga-api` | `backend/Dockerfile` (port 3001) | https://tourney-orga-api.challenge-limits.com |
 | `tourney-orga-web` | `frontend/Dockerfile` (port 3000) | https://tourney-orga.challenge-limits.com |
 
+- **Automatic deploys:** both apps build from GitHub through the Coolify GitHub App `tourney-orga` (setting `COOLIFY_GITHUB_APP_NAME`). Every push to `main` redeploys the app whose folder changed: watch paths `backend/**` and `frontend/**`.
 - **How the UI reaches the API:** the UI proxies `/api` to the API over Coolify's internal network, using the network alias `tourney-orga-api`. The browser only ever talks to the UI domain, so cookies stay first-party.
 - **Why the API domain is public:** for the one-click unsubscribe links in emails.
 - **Migrations:** the API runs pending migrations on start (`RUN_MIGRATIONS=true`, behind a database lock).
@@ -118,8 +119,8 @@ cp deploy/.env.coolify.example deploy/.env.coolify   # fill in the Coolify URL, 
 
 | Command | What it does |
 |---|---|
-| `init` | Creates the project, database (with a backup schedule), API and UI, pushes the configuration and deploys both. Safe to re-run: existing resources are reused. |
-| `update [backend\|frontend\|all]` | Pushes the configuration (env vars, domains, ports) and redeploys. Use it after changing `deploy/.env.coolify` or to deploy the latest `main`. |
+| `init` | Creates the project, database (with a backup schedule), API and UI, pushes the configuration and deploys both. The apps build from the GitHub App with auto-deploy. Safe to re-run: existing resources are reused. An app that does not build from the GitHub App is deleted and recreated (the database is kept). |
+| `update [backend\|frontend\|all]` | Pushes the configuration (env vars, domains, ports) and redeploys. Use it after changing `deploy/.env.coolify`. Code changes deploy on push. |
 | `reset [--yes]` | **Deletes the database with all its data** and its backup schedule, then creates an empty one and redeploys the API. Migrations run and the first admin is created again. |
 | `teardown [--yes]` | **Deletes the apps, the database with all its data and the project.** `deploy/.env.coolify` is kept. |
 | `status` | Shows each resource's state and whether both domains respond. |
