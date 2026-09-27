@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/*
+ * Bay State Bullets brand (baystatebullets.com): orange, charcoal and light grey.
+ * The bright brand orange (#ea8c32) only has 2.5:1 contrast with white, so it is used
+ * for accents and with dark text; buttons, links and focus rings use the darker
+ * burnt orange (5.2:1 on white, WCAG AA).
+ */
+@theme {
+  --color-brand-orange: #ea8c32;
+  --color-brand-orange-soft: #fdf1e6;
+  /* Orange for text on the charcoal sidebar (5.1:1) */
+  --color-brand-orange-light: #f0a05a;
+  --color-brand-orange-muted: #f5cfa6;
+  --color-brand-primary: #a8570f;
+  --color-brand-primary-hover: #8a470c;
+  --color-brand-ink: #5c3007;
+  --color-brand-charcoal: #3d3d3d;
+  --color-brand-charcoal-hover: #525252;
+  --color-brand-grey: #6b6b6b;
+  --color-brand-secondary: #ea8c32;
+  --color-background-card: #f5f5f5;
+  --font-display: var(--font-lato), "Lato", sans-serif;
+  --font-sans: var(--font-source-sans), "Source Sans 3", "Source Sans Pro", sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: #ffffff;
+  color: #1f1f1f;
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}
+
+/* Native <dialog> backdrop */
+dialog::backdrop {
+  background: rgb(31 31 31 / 0.5);
+}
+
+/* Visible focus for keyboard users on every interactive element (5.2:1 on white) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* On dark brand backgrounds use a white focus ring for sufficient contrast */
+.bg-brand-primary :focus-visible,
+.bg-brand-charcoal :focus-visible {
+  outline-color: #ffffff;
+}

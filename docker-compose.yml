@@ -1,0 +1,52 @@
+# Coolify: deploy as a "Docker Compose" resource. Set the variables from .env.example
+# in Coolify's environment tab and assign your domain to the `web` service.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 10s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    command: ["node", "node_modules/typeorm/cli.js", "migration:run", "-d", "dist/database/data-source.js"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY_HOPS: 2
+      DATABASE_URL: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-app}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://api:3001
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

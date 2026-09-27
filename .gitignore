@@ -1,0 +1,8 @@
+.env
+
+# Local deployment config and state (secrets)
+deploy/.env.coolify
+deploy/.coolify-state
+
+# Test coverage output
+backend/coverage-e2e/
